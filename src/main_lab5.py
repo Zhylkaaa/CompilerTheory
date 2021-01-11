@@ -9,7 +9,7 @@ from Interpreter import Interpreter
 if __name__ == '__main__':
 
     try:
-        filename = sys.argv[1] if len(sys.argv) > 1 else "lab5/matrix.m"
+        filename = sys.argv[1] if len(sys.argv) > 1 else "lab5/triangle.m"
         file = open(filename, "r")
     except IOError:
         print("Cannot open {0} file".format(filename))
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     if not parser.errorok:
         sys.exit()
 
-    ast.printTree()
+    #ast.printTree()
 
     # Below code shows how to use visitor
     typeChecker = TypeChecker()

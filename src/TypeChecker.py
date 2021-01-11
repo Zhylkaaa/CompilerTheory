@@ -198,7 +198,7 @@ class TypeChecker(NodeVisitor):
                 for i, idx in enumerate(index.index):
                     t, value = self.visit(idx)
                     if t != 'int':
-                        self.print_error(node.lineno, "Index should be integer number")
+                        self.print_error(node.lineno, "Index should be integer numbered")
                     if isinstance(value, tuple):
                         self.print_error(node.lineno, "Vector or matrix can't be used as index")  # TODO: Or do it?
 
@@ -281,8 +281,9 @@ class TypeChecker(NodeVisitor):
             if not isinstance(shape_or_val, tuple):
                 shape_or_val = None
 
-            symbol = SymbolTable.VariableSymbol(identifier.name, (t, shape_or_val))
-            self.current_scope.put(identifier.name, symbol)
+            if self.current_scope.get(identifier.name) is None or identifier.index is None:
+                symbol = SymbolTable.VariableSymbol(identifier.name, (t, shape_or_val))
+                self.current_scope.put(identifier.name, symbol)
 
     def visit_ForLoop(self, node):
         self.current_scope = self.current_scope.pushScope('for')
@@ -303,6 +304,8 @@ class TypeChecker(NodeVisitor):
 
         if isinstance(shape_or_val1, tuple) or isinstance(shape_or_val2, tuple):
             self.print_error(node.lineno, "Range operator only works with scalar values")
+
+        return 'int', None
 
     def check_condition(self, node, condition=None):
         if condition is None:

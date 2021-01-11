@@ -73,31 +73,35 @@ class Interpreter(object):
                 value = self.eval_expr(node.assignment_type[:-1], left, r)
 
             self.memory_stack.set(idf.name, value)
+            return value
         else:  # variable with indexes
             index = idf.index.accept(self)
             var_name = idf.name
-            var_value = idf.accept(self)
+            try:
+                var_value = self.memory_stack.get(var_name)
+            except KeyError:
+                self.error(f'{var_name} does not declared in this scope', node.lineno)
 
-            if any(index > var_value.shape):
+            if all([isinstance(i, int) for i in index]) and index > var_value.shape:
                 self.error(f'{index} index is greater than {var_name} shape {var_value.shape}', node.lineno)
 
             if node.assignment_type == '=':
-                var_value[index] = r
+                value = r
             else:
                 try:
                     value = self.eval_expr(node.assignment_type[:-1], var_value[index], r)
                 except Exception as e:
                     self.error(f'InternalInterpreterError: {e}', node.lineno)
-                var_value[index] = value
-        return value
+            var_value[index] = value
+            return value
 
     @when(AST.Index)
     def visit(self, node):
         idx = []
         for el in node.index:
             ev_el = el.accept(self)
-            if not isinstance(ev_el, int):
-                self.error('index element is not of int type', node.lineno)
+            if not (isinstance(ev_el, int) or isinstance(ev_el, range)):
+                self.error('index element is not of int or range type', node.lineno)
             idx.append(ev_el)
         return tuple(idx)
 
@@ -105,9 +109,17 @@ class Interpreter(object):
     def visit(self, node):
         try:
             var_value = self.memory_stack.get(node.name)
-            return var_value
         except KeyError:
             self.error(f'{node.name} does not declared in this scope', node.lineno)
+
+        if node.index:
+            index = node.index.accept(self)
+
+            if all([isinstance(i, int) for i in index]) and index > var_value.shape:
+                self.error(f'{index} index is greater than {node.name} shape {var_value.shape}', node.lineno)
+
+            return var_value[index]
+        return var_value
 
     @when(AST.Transpose)
     def visit(self, node):
@@ -130,11 +142,12 @@ class Interpreter(object):
     @when(AST.Function)
     def visit(self, node):
         args = node.args.accept(self)
+        if node.function_name == 'eye':
+            return np.eye(args[0])
         return {
             'ones': np.ones,
-            'zeros': np.zeros,
-            'eye': np.eye
-        }[node.function_name](*args)
+            'zeros': np.zeros
+        }[node.function_name](args)
 
     @when(AST.While)
     def visit(self, node):
