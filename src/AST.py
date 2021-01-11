@@ -2,6 +2,9 @@ class Node(object):
     def __init__(self):
         self.lineno = None
 
+    def accept(self, visitor):
+        return visitor.visit(self)
+
 
 class IntNum(Node):
     def __init__(self, value):
@@ -18,7 +21,7 @@ class FloatNum(Node):
 class StringLiteral(Node):
     def __init__(self, value):
         super().__init__()
-        self.value = value
+        self.value = value[1:-1]
 
 
 class Tensor(Node):
@@ -63,6 +66,7 @@ class Negation(Node):
 class Tuple(Node):
     def __init__(self, args):
         self.args = args
+
 
 class Function(Node):
     def __init__(self, function_name, args):

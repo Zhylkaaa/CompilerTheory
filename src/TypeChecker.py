@@ -2,7 +2,10 @@ import AST
 import SymbolTable
 from termcolor import colored
 
+
 class NodeVisitor(object):
+    def __init__(self):
+        self.error_count = 0
 
     def visit(self, node):
         method = 'visit_' + node.__class__.__name__
@@ -23,6 +26,7 @@ class NodeVisitor(object):
                     self.visit(child)
 
     def print_error(self, lineno, msg):
+        self.error_count += 1
         print(colored(f'Error on line {lineno}: {msg}', 'red'))
 
     # simpler version of generic_visit, not so general
@@ -55,6 +59,8 @@ class TypeChecker(NodeVisitor):
             ('int', 'float'): 'float',
             ('float', 'int'): 'float',
             ('float', 'float'): 'float',
+            ('str', 'int'): 'str',
+            ('int', 'str'): 'str'
         },
         '/': {
             ('int', 'int'): 'int',
@@ -127,6 +133,7 @@ class TypeChecker(NodeVisitor):
     }
 
     def __init__(self):
+        super().__init__()
         self.current_scope = SymbolTable.SymbolTable(None, 'program')
 
     def visit_BinExpr(self, node):
@@ -182,7 +189,7 @@ class TypeChecker(NodeVisitor):
 
         var_type, var_shape_or_val = var.type
 
-        if index is not None: # TODO: refactor? (use wraped Tuple in visit_index)
+        if index is not None:  # TODO: refactor? (use wrapped Tuple in visit_index)
             if not isinstance(var_shape_or_val, tuple):
                 self.print_error(node.lineno, "Scalar value does not support indexing")
             elif len(index.index) > len(var_shape_or_val):
@@ -263,7 +270,10 @@ class TypeChecker(NodeVisitor):
         assignment_type = node.assignment_type
         expr = node.expr
 
-        if assignment_type[0] != '=':
+        if identifier.index is not None:
+            self.visit(identifier)
+
+        if assignment_type != '=':
             additional_expression = AST.BinExpr(assignment_type[0], identifier, expr)
             self.visit(additional_expression)
         else:
@@ -343,7 +353,11 @@ class TypeChecker(NodeVisitor):
     def visit_Controlflow(self, node):
 
         if node.command in ['break', 'continue']:
-            if self.current_scope.scope_name not in ['while', 'for']:
+            scope = self.current_scope
+            while scope and scope.scope_name not in ['while', 'for']:
+                scope = scope.getParentScope()
+
+            if scope is None:
                 self.print_error(node.lineno, f"{node.command} out of loop scope")
 
         if node.ret_val:
@@ -358,11 +372,11 @@ class TypeChecker(NodeVisitor):
     def visit_StringLiteral(self, node):
         return 'str', node.value
 
-    def visit_Tensor(self, node):  # TODO: support more than 2-d matrix
+    def visit_Tensor(self, node):
         sizes = set()
         dtype = set()
 
-        for elem in node.value:
+        for elem in node.value:  # [AST.Tensor, AST.Tensor, .....]
             t, val_or_shape = self.visit(elem)
             if not isinstance(val_or_shape, tuple):
                 val_or_shape = ()

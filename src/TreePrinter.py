@@ -83,7 +83,6 @@ class TreePrinter:
 
     @addToClass(AST.Assignment)
     def printTree(self, indent=0):
-        print(self.lineno)
         prefix = '|  ' * indent
         print(prefix + self.assignment_type)
         self.identifier.printTree(indent=indent+1)

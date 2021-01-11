@@ -229,8 +229,10 @@ def p_id(p):
 
 
 def p_index(p):
-    """index : expr
-             | expr ',' index"""
+    """index : range
+             | expr
+             | expr ',' index
+             | range ',' index"""
     p[0] = [p[1]]
     if len(p) == 4:
         p[0] += p[3]
