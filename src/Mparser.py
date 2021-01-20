@@ -177,7 +177,6 @@ def p_functioncall(p):
 def p_constant(p):
     """constant : INTNUM
              | FLOATNUM
-             | STRING
              | tensor"""
 
     if isinstance(p[1], int):
@@ -186,12 +185,15 @@ def p_constant(p):
     elif isinstance(p[1], float):
         p[0] = AST.FloatNum(p[1])
         p[0].lineno = p.lineno(1)
-    elif isinstance(p[1], str) and p[1][0] == '"':
-        p[0] = AST.StringLiteral(p[1])
-        p[0].lineno = p.lineno(1)
     else:
         p[0] = AST.Tensor(p[1])
         p[0].lineno = p.lineno(1)
+
+
+def p_constant_str(p):
+    """constant : STRING"""
+    p[0] = AST.StringLiteral(p[1])
+    p[0].lineno = p.lineno(1)
 
 
 def p_tensor(p):

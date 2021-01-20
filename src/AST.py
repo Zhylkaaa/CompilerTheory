@@ -21,7 +21,7 @@ class FloatNum(Node):
 class StringLiteral(Node):
     def __init__(self, value):
         super().__init__()
-        self.value = value[1:-1]
+        self.value = value
 
 
 class Tensor(Node):
