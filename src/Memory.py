@@ -20,7 +20,7 @@ class MemoryStack:
         self.stack = [memory if memory else Memory('global')]
 
     def get(self, name):  # gets from memory stack current value of variable <name>
-        for memory in self.stack:
+        for memory in reversed(self.stack):
             if memory.has_key(name):
                 return memory.get(name)
         raise KeyError(f'{name} doesn\'t declared in this scope')
